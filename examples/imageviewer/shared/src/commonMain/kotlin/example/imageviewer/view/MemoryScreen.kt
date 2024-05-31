@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,25 +28,32 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.programadorthi.routing.compose.LocalRouting
+import dev.programadorthi.routing.compose.pop
+import dev.programadorthi.routing.resources.push
+import dev.programadorthi.routing.resources.replaceAll
 import example.imageviewer.LocalImageProvider
+import example.imageviewer.LocalImagesProvider
 import example.imageviewer.LocalSharePicture
 import example.imageviewer.filter.getPlatformContext
 import example.imageviewer.icon.IconAutoFixHigh
 import example.imageviewer.isShareFeatureSupported
 import example.imageviewer.model.*
+import example.imageviewer.routing.FullScreenPage
+import example.imageviewer.routing.GalleryPage
+import example.imageviewer.routing.MemoryPage
+import example.imageviewer.routing.PopResult
 import example.imageviewer.shareIcon
 import example.imageviewer.style.ImageviewerColors
 
 @Composable
 fun MemoryScreen(
-    pictures: SnapshotStateList<PictureData>,
     memoryPage: MemoryPage,
-    onSelectRelatedMemory: (pictureIndex: Int) -> Unit,
-    onBack: (resetNavigation: Boolean) -> Unit,
-    onHeaderClick: (index: Int) -> Unit,
 ) {
     val imageProvider = LocalImageProvider.current
     val sharePicture = LocalSharePicture.current
+    val pictures = LocalImagesProvider.current
+    val router = LocalRouting.current
     var edit: Boolean by remember { mutableStateOf(false) }
     val picture = pictures.getOrNull(memoryPage.pictureIndex) ?: return
     var headerImage: ImageBitmap? by remember(picture) { mutableStateOf(null) }
@@ -77,7 +83,9 @@ fun MemoryScreen(
                     MemoryHeader(
                         it,
                         picture = picture,
-                        onClick = { onHeaderClick(memoryPage.pictureIndex) }
+                        onClick = {
+                            router.push(FullScreenPage(memoryPage.pictureIndex))
+                        }
                     )
                 }
             }
@@ -103,7 +111,9 @@ fun MemoryScreen(
                                     SquareThumbnail(
                                         picture = relatedPicture,
                                         isHighlighted = false,
-                                        onClick = { onSelectRelatedMemory(index) }
+                                        onClick = {
+                                            router.push(MemoryPage(index))
+                                        }
                                     )
                                 }
                             }
@@ -125,7 +135,7 @@ fun MemoryScreen(
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                         IconWithText(Icons.Default.Delete, "Delete") {
                             imageProvider.delete(picture)
-                            onBack(true)
+                            router.replaceAll(GalleryPage(pictureIndex = 0))
                         }
                         IconWithText(Icons.Default.Edit, "Edit") {
                             edit = true
@@ -143,7 +153,7 @@ fun MemoryScreen(
         TopLayout(
             alignLeftContent = {
                 BackButton {
-                    onBack(false)
+                    router.pop(result = PopResult(index = memoryPage.pictureIndex))
                 }
             },
             alignRightContent = {},

@@ -11,27 +11,30 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import dev.programadorthi.routing.compose.LocalRouting
+import dev.programadorthi.routing.compose.pop
 import example.imageviewer.LocalImageProvider
+import example.imageviewer.LocalImagesProvider
 import example.imageviewer.Localization
 import example.imageviewer.LocalLocalization
 import example.imageviewer.filter.FilterType
 import example.imageviewer.filter.getFilter
 import example.imageviewer.filter.getPlatformContext
 import example.imageviewer.model.*
+import example.imageviewer.routing.FullScreenPage
 import example.imageviewer.style.*
 
 @Composable
 fun FullscreenImageScreen(
-    picture: PictureData,
-    back: () -> Unit,
+    fullScreenPage: FullScreenPage,
 ) {
+    val pictures = LocalImagesProvider.current
     val imageProvider = LocalImageProvider.current
     val localization: Localization = LocalLocalization.current
-    val availableFilters = FilterType.values().toList()
+    val router = LocalRouting.current
+    val availableFilters = FilterType.entries.toList()
+    val picture = remember(fullScreenPage) { pictures[fullScreenPage.pictureIndex] }
     var selectedFilters by remember { mutableStateOf(emptySet<FilterType>()) }
 
     val originalImageState = remember(picture) { mutableStateOf<ImageBitmap?>(null) }
@@ -89,7 +92,9 @@ fun FullscreenImageScreen(
         TopLayout(
             alignLeftContent = {
                 Tooltip(localization.back) {
-                    BackButton(back)
+                    BackButton {
+                        router.pop()
+                    }
                 }
             },
             alignRightContent = {},

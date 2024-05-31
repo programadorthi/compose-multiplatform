@@ -11,14 +11,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import dev.programadorthi.routing.compose.LocalRouting
+import dev.programadorthi.routing.compose.pop
 import example.imageviewer.LocalImageProvider
+import example.imageviewer.routing.PopResult
 import kotlinx.coroutines.delay
 
 @Composable
-fun CameraScreen(onBack: (resetSelectedPicture: Boolean) -> Unit) {
+fun CameraScreen() {
     val imageProvider = LocalImageProvider.current
+    val router = LocalRouting.current
     var showCamera by remember { mutableStateOf(false) }
-    LaunchedEffect(onBack) {
+    LaunchedEffect(Unit) {
         if (!showCamera) {
             delay(300) // for animation
             showCamera = true
@@ -28,13 +32,13 @@ fun CameraScreen(onBack: (resetSelectedPicture: Boolean) -> Unit) {
         if (showCamera) {
             CameraView(Modifier.fillMaxSize(), onCapture = { picture, image ->
                 imageProvider.saveImage(picture, image)
-                onBack(true)
+                router.pop(result = PopResult(index = 0))
             })
         }
         TopLayout(
             alignLeftContent = {
                 BackButton {
-                    onBack(false)
+                    router.pop()
                 }
             },
             alignRightContent = {},

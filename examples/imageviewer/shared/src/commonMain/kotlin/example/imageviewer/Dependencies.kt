@@ -129,6 +129,10 @@ internal val LocalImageProvider = staticCompositionLocalOf<ImageProvider> {
     noLocalProvidedFor("LocalImageProvider")
 }
 
+internal val LocalImagesProvider = staticCompositionLocalOf<SnapshotStateList<PictureData>> {
+    noLocalProvidedFor("LocalImagesProvider")
+}
+
 internal val LocalInternalEvents = staticCompositionLocalOf<Flow<ExternalImageViewerEvent>> {
     noLocalProvidedFor("LocalInternalEvents")
 }

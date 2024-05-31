@@ -23,7 +23,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,13 +33,22 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import dev.programadorthi.routing.compose.LocalRouting
+import dev.programadorthi.routing.compose.popResult
+import dev.programadorthi.routing.compose.poppedCall
+import dev.programadorthi.routing.resources.push
 import example.imageviewer.ExternalImageViewerEvent
 import example.imageviewer.LocalImageProvider
+import example.imageviewer.LocalImagesProvider
 import example.imageviewer.LocalInternalEvents
 import example.imageviewer.LocalNotification
 import example.imageviewer.icon.IconMenu
 import example.imageviewer.icon.IconVisibility
 import example.imageviewer.model.PictureData
+import example.imageviewer.routing.CameraPage
+import example.imageviewer.routing.GalleryPage
+import example.imageviewer.routing.MemoryPage
+import example.imageviewer.routing.PopResult
 import example.imageviewer.style.ImageviewerColors
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
@@ -52,23 +61,27 @@ enum class GalleryStyle {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GalleryScreen(
-    pictures: SnapshotStateList<PictureData>,
-    selectedPictureIndex: MutableState<Int>,
-    onClickPreviewPicture: (index: Int) -> Unit,
-    onMakeNewMemory: () -> Unit
+    galleryPage: GalleryPage,
 ) {
     val imageProvider = LocalImageProvider.current
+    val pictures = LocalImagesProvider.current
+    val router = LocalRouting.current
     val viewScope = rememberCoroutineScope()
 
+    var selectedPictureIndex by rememberSaveable(key = "${galleryPage::class}") {
+        val result = router.poppedCall()?.popResult<PopResult>()
+        mutableStateOf(result?.index ?: galleryPage.pictureIndex)
+    }
+
     val pagerState = rememberPagerState(
-        initialPage = selectedPictureIndex.value,
+        initialPage = selectedPictureIndex,
         initialPageOffsetFraction = 0f,
         pageCount = { pictures.size },
     )
     LaunchedEffect(pagerState) {
         // Subscribe to page changes
         snapshotFlow { pagerState.currentPage }.collect { page ->
-            selectedPictureIndex.value = page
+            selectedPictureIndex = page
         }
     }
 
@@ -121,7 +134,7 @@ fun GalleryScreen(
                 Box(
                     Modifier.fillMaxSize()
                         .clickable {
-                            onClickPreviewPicture(pagerState.currentPage)
+                            router.push(MemoryPage(pagerState.currentPage))
                         }
                 ) {
                     HorizontalPager(state = pagerState) { index ->
@@ -169,13 +182,17 @@ fun GalleryScreen(
                 GalleryStyle.LIST -> ListGalleryView(
                     pictures = pictures,
                     onSelect = { selectPicture(it) },
-                    onFullScreen = { onClickPreviewPicture(it) },
+                    onFullScreen = {
+                        router.push(MemoryPage(it))
+                    },
                 )
             }
             CircularButton(
                 Icons.Filled.Add,
                 modifier = Modifier.align(Alignment.BottomCenter).padding(36.dp),
-                onClick = onMakeNewMemory,
+                onClick = {
+                    router.push(CameraPage())
+                },
             )
         }
     }
