@@ -4,7 +4,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import dev.programadorthi.routing.compose.animation.composable
-import dev.programadorthi.routing.compose.resource
 import dev.programadorthi.routing.core.install
 import dev.programadorthi.routing.core.routing
 import dev.programadorthi.routing.resources.Resources
@@ -36,19 +35,19 @@ val router = routing {
 
     composable<GalleryPage>(
         enterTransition = {
-            val previousPage = initialState.resource<MemoryPage>()
-            // Check if we are navigating from MemoryPage to GalleryPage
-            if (previousPage != null) {
+            // Check if we are routing from MemoryPage to GalleryPage
+            val enterFadeIn = initialState.uri.startsWith("/memory")
+            if (enterFadeIn) {
                 fadeIn()
             } else {
                 defaultEnterTransition()
             }
         },
         exitTransition = {
-            val nextPage = targetState.resource<MemoryPage>()
-            // Check if we are navigating from GalleryPage to MemoryPage
-            if (nextPage != null) {
-                fadeOut(tween(delayMillis = 150))
+            // Check if we are routing from GalleryPage to MemoryPage
+            val exitFadeOut = targetState.uri.startsWith("/memory")
+            if (exitFadeOut) {
+                fadeOut(tween(durationMillis = 500, 500))
             } else {
                 defaultExitTransition()
             }
@@ -59,19 +58,19 @@ val router = routing {
 
     composable<MemoryPage>(
         enterTransition = {
-            val previousPage = initialState.resource<GalleryPage>()
-            // Check if we are navigating from GalleryPage to MemoryPage
-            if (previousPage != null) {
+            // Check if we are routing from MemoryPage to GalleryPage
+            val enterFadeIn = initialState.uri.startsWith("/gallery")
+            if (enterFadeIn) {
                 fadeIn()
             } else {
                 defaultEnterTransition()
             }
         },
         exitTransition = {
-            val nextPage = targetState.resource<GalleryPage>()
-            // Check if we are navigating from MemoryPage to GalleryPage
-            if (nextPage != null) {
-                fadeOut(tween(durationMillis = 500, 500))
+            // Check if we are routing from GalleryPage to MemoryPage
+            val exitFadeOut = targetState.uri.startsWith("/gallery")
+            if (exitFadeOut) {
+                fadeOut(tween(delayMillis = 150))
             } else {
                 defaultExitTransition()
             }

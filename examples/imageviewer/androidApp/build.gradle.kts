@@ -12,6 +12,7 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(project(":shared"))
+                implementation("dev.programadorthi.routing:compose-animation:0.0.15")
             }
         }
     }

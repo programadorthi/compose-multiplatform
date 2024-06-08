@@ -4,25 +4,24 @@ import android.os.Bundle
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import dev.programadorthi.routing.compose.canPop
+import dev.programadorthi.routing.compose.pop
+import example.imageviewer.routing.router
 import example.imageviewer.view.ImageViewerAndroid
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
 
 class MainActivity : AppCompatActivity() {
-
-    val externalEvents = MutableSharedFlow<ExternalImageViewerEvent>(
-        replay = 0,
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            ImageViewerAndroid(externalEvents)
+            ImageViewerAndroid()
         }
         onBackPressedDispatcher.addCallback {
-            externalEvents.tryEmit(ExternalImageViewerEvent.ReturnBack)
+            if (router.canPop) {
+                router.pop()
+            } else {
+                finish()
+            }
         }
     }
 
