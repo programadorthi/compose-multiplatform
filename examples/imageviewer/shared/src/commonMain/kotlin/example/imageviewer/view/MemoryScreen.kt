@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -28,10 +29,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.programadorthi.routing.compose.LocalRouting
-import dev.programadorthi.routing.compose.pop
+import cafe.adriel.voyager.core.screen.Screen
 import dev.programadorthi.routing.resources.push
 import dev.programadorthi.routing.resources.replaceAll
+import dev.programadorthi.routing.voyager.LocalVoyagerRouting
+import dev.programadorthi.routing.voyager.pop
 import example.imageviewer.LocalImageProvider
 import example.imageviewer.LocalImagesProvider
 import example.imageviewer.LocalSharePicture
@@ -46,122 +48,128 @@ import example.imageviewer.routing.PopResult
 import example.imageviewer.shareIcon
 import example.imageviewer.style.ImageviewerColors
 
-@Composable
-fun MemoryScreen(
-    memoryPage: MemoryPage,
-) {
-    val imageProvider = LocalImageProvider.current
-    val sharePicture = LocalSharePicture.current
-    val pictures = LocalImagesProvider.current
-    val router = LocalRouting.current
-    var edit: Boolean by remember { mutableStateOf(false) }
-    val picture = pictures.getOrNull(memoryPage.pictureIndex) ?: return
-    var headerImage: ImageBitmap? by remember(picture) { mutableStateOf(null) }
-    val platformContext = getPlatformContext()
-    val verticalScrollEnableState = remember { mutableStateOf(true) }
-    LaunchedEffect(picture) {
-        headerImage = imageProvider.getImage(picture)
-    }
-    Box {
-        val scrollState = rememberScrollState()
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(scrollState, enabled = verticalScrollEnableState.value)
-        ) {
-            Box(
+class MemoryScreen(
+    private val pictureIndex: Int
+) : Screen {
+
+    @Composable
+    override fun Content() {
+        val imageProvider = LocalImageProvider.current
+        val sharePicture = LocalSharePicture.current
+        val pictures = LocalImagesProvider.current
+        val router = LocalVoyagerRouting.current
+        var edit: Boolean by remember { mutableStateOf(false) }
+        val picture = pictures.getOrNull(pictureIndex) ?: return
+        var headerImage: ImageBitmap? by remember(picture) { mutableStateOf(null) }
+        val platformContext = getPlatformContext()
+        val verticalScrollEnableState = remember { mutableStateOf(true) }
+        LaunchedEffect(picture) {
+            headerImage = imageProvider.getImage(picture)
+        }
+        Box {
+            val scrollState = rememberScrollState()
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(393.dp)
-                    .background(Color.White)
-                    .graphicsLayer {
-                        translationY = 0.5f * scrollState.value
-                    },
-                contentAlignment = Alignment.Center
+                    .verticalScroll(scrollState, enabled = verticalScrollEnableState.value)
             ) {
-                headerImage?.let {
-                    MemoryHeader(
-                        it,
-                        picture = picture,
-                        onClick = {
-                            router.push(FullScreenPage(memoryPage.pictureIndex))
-                        }
-                    )
-                }
-            }
-            Box(modifier = Modifier.background(MaterialTheme.colors.background)) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Headliner("Note")
-                    Collapsible(picture.description, onEdit = { edit = true })
-                    Headliner("Related memories")
-                    val shuffledIndices = remember {
-                        (pictures.indices.toList() - memoryPage.pictureIndex).shuffled().take(8)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(393.dp)
+                        .background(Color.White)
+                        .graphicsLayer {
+                            translationY = 0.5f * scrollState.value
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    headerImage?.let {
+                        MemoryHeader(
+                            it,
+                            picture = picture,
+                            onClick = {
+                                router.push(FullScreenPage(pictureIndex))
+                            }
+                        )
                     }
-                    LazyRow(
-                        modifier = Modifier
-                            .padding(10.dp, 0.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(items = shuffledIndices) { index ->
-                            val relatedPicture = pictures.getOrNull(index)
-                            if (relatedPicture != null) {
-                                Box(Modifier.size(130.dp).clip(RoundedCornerShape(8.dp))) {
-                                    SquareThumbnail(
-                                        picture = relatedPicture,
-                                        isHighlighted = false,
-                                        onClick = {
-                                            router.push(MemoryPage(index))
-                                        }
-                                    )
+                }
+                Box(modifier = Modifier.background(MaterialTheme.colors.background)) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Headliner("Note")
+                        Collapsible(picture.description, onEdit = { edit = true })
+                        Headliner("Related memories")
+                        val shuffledIndices = remember {
+                            (pictures.indices.toList() - pictureIndex).shuffled().take(8)
+                        }
+                        LazyRow(
+                            modifier = Modifier
+                                .padding(10.dp, 0.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(items = shuffledIndices) { index ->
+                                val relatedPicture = pictures.getOrNull(index)
+                                if (relatedPicture != null) {
+                                    Box(Modifier.size(130.dp).clip(RoundedCornerShape(8.dp))) {
+                                        SquareThumbnail(
+                                            picture = relatedPicture,
+                                            isHighlighted = false,
+                                            onClick = {
+                                                router.push(MemoryPage(index))
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
-                    Headliner("Place")
-                    val locationShape = RoundedCornerShape(10.dp)
-                    LocationVisualizer(
-                        Modifier.padding(horizontal = 12.dp)
-                            .clip(locationShape)
-                            .border(1.dp, Color.Gray, locationShape)
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        gps = picture.gps,
-                        title = picture.name,
-                        parentScrollEnableState = verticalScrollEnableState,
-                    )
-                    Spacer(Modifier.height(50.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                        IconWithText(Icons.Default.Delete, "Delete") {
-                            imageProvider.delete(picture)
-                            router.replaceAll(GalleryPage(pictureIndex = 0))
-                        }
-                        IconWithText(Icons.Default.Edit, "Edit") {
-                            edit = true
-                        }
-                        if (isShareFeatureSupported) {
-                            IconWithText(shareIcon, "Share") {
-                                sharePicture.share(platformContext, picture)
+                        Headliner("Place")
+                        val locationShape = RoundedCornerShape(10.dp)
+                        LocationVisualizer(
+                            Modifier.padding(horizontal = 12.dp)
+                                .clip(locationShape)
+                                .border(1.dp, Color.Gray, locationShape)
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            gps = picture.gps,
+                            title = picture.name,
+                            parentScrollEnableState = verticalScrollEnableState,
+                        )
+                        Spacer(Modifier.height(50.dp))
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            IconWithText(Icons.Default.Delete, "Delete") {
+                                imageProvider.delete(picture)
+                                router.replaceAll(GalleryPage(pictureIndex = 0))
+                            }
+                            IconWithText(Icons.Default.Edit, "Edit") {
+                                edit = true
+                            }
+                            if (isShareFeatureSupported) {
+                                IconWithText(shareIcon, "Share") {
+                                    sharePicture.share(platformContext, picture)
+                                }
                             }
                         }
+                        Spacer(Modifier.height(50.dp))
                     }
-                    Spacer(Modifier.height(50.dp))
                 }
             }
-        }
-        TopLayout(
-            alignLeftContent = {
-                BackButton {
-                    router.pop(result = PopResult(index = memoryPage.pictureIndex))
+            TopLayout(
+                alignLeftContent = {
+                    BackButton {
+                        router.pop(result = PopResult(index = pictureIndex))
+                    }
+                },
+                alignRightContent = {},
+            )
+            if (edit) {
+                EditMemoryDialog(picture.name, picture.description) { name, description ->
+                    imageProvider.edit(picture, name, description)
+                    edit = false
                 }
-            },
-            alignRightContent = {},
-        )
-        if (edit) {
-            EditMemoryDialog(picture.name, picture.description) { name, description ->
-                imageProvider.edit(picture, name, description)
-                edit = false
             }
         }
     }

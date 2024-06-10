@@ -22,7 +22,7 @@ kotlin {
         useEsModules()
     }
 
-    @OptIn(ExperimentalWasmDsl::class)
+    /*@OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         moduleName = "imageviewer"
         browser {
@@ -39,7 +39,7 @@ kotlin {
 //            }
         }
         binaries.executable()
-    }
+    }*/
 
     sourceSets {
         val jsWasmMain by creating {
@@ -56,8 +56,8 @@ kotlin {
         val jsMain by getting {
             dependsOn(jsWasmMain)
         }
-        val wasmJsMain by getting {
+        /*val wasmJsMain by getting {
             dependsOn(jsWasmMain)
-        }
+        }*/
     }
 }

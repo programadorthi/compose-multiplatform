@@ -33,10 +33,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import dev.programadorthi.routing.compose.LocalRouting
-import dev.programadorthi.routing.compose.popResult
-import dev.programadorthi.routing.compose.poppedCall
+import cafe.adriel.voyager.core.screen.Screen
 import dev.programadorthi.routing.resources.push
+import dev.programadorthi.routing.voyager.LocalVoyagerRouting
+import dev.programadorthi.routing.voyager.VoyagerRoutingPopResult
 import example.imageviewer.ExternalImageViewerEvent
 import example.imageviewer.LocalImageProvider
 import example.imageviewer.LocalImagesProvider
@@ -46,7 +46,6 @@ import example.imageviewer.icon.IconMenu
 import example.imageviewer.icon.IconVisibility
 import example.imageviewer.model.PictureData
 import example.imageviewer.routing.CameraPage
-import example.imageviewer.routing.GalleryPage
 import example.imageviewer.routing.MemoryPage
 import example.imageviewer.routing.PopResult
 import example.imageviewer.style.ImageviewerColors
@@ -58,142 +57,149 @@ enum class GalleryStyle {
     LIST
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun GalleryScreen(
-    galleryPage: GalleryPage,
-) {
-    val imageProvider = LocalImageProvider.current
-    val pictures = LocalImagesProvider.current
-    val router = LocalRouting.current
-    val viewScope = rememberCoroutineScope()
+class GalleryScreen(
+    initialPictureIndex: Int
+) : Screen, VoyagerRoutingPopResult<PopResult> {
+    private var pictureIndex = mutableStateOf(initialPictureIndex)
 
-    var selectedPictureIndex by rememberSaveable(key = "${galleryPage::class}") {
-        val result = router.poppedCall()?.popResult<PopResult>()
-        mutableStateOf(result?.index ?: galleryPage.pictureIndex)
-    }
-
-    val pagerState = rememberPagerState(
-        initialPage = selectedPictureIndex,
-        initialPageOffsetFraction = 0f,
-        pageCount = { pictures.size },
-    )
-    LaunchedEffect(pagerState) {
-        // Subscribe to page changes
-        snapshotFlow { pagerState.currentPage }.collect { page ->
-            selectedPictureIndex = page
+    override fun onResult(result: PopResult?) {
+        if (result != null) {
+            pictureIndex.value = result.index
         }
     }
 
-    fun nextImage() {
-        viewScope.launch {
-            pagerState.animateScrollToPage(
-                (pagerState.currentPage + 1).mod(pictures.size)
-            )
-        }
-    }
+    @OptIn(ExperimentalFoundationApi::class)
+    @Composable
+    override fun Content() {
+        val imageProvider = LocalImageProvider.current
+        val pictures = LocalImagesProvider.current
+        val router = LocalVoyagerRouting.current
+        val viewScope = rememberCoroutineScope()
 
-    fun previousImage() {
-        viewScope.launch {
-            pagerState.animateScrollToPage(
-                (pagerState.currentPage - 1).mod(pictures.size)
-            )
-        }
-    }
+        var selectedPictureIndex by rememberSaveable { pictureIndex }
 
-    fun selectPicture(index: Int) {
-        viewScope.launch {
-            pagerState.animateScrollToPage(
-                index,
-                animationSpec = tween(
-                    easing = LinearOutSlowInEasing,
-                    durationMillis = AnimationConstants.DefaultDurationMillis * 2
-                )
-            )
-        }
-    }
-
-    var galleryStyle by remember { mutableStateOf(GalleryStyle.SQUARES) }
-    val externalEvents = LocalInternalEvents.current
-    LaunchedEffect(Unit) {
-        externalEvents.collect {
-            when (it) {
-                ExternalImageViewerEvent.Next -> nextImage()
-                ExternalImageViewerEvent.Previous -> previousImage()
-                else -> {}
+        val pagerState = rememberPagerState(
+            initialPage = selectedPictureIndex,
+            initialPageOffsetFraction = 0f,
+            pageCount = { pictures.size },
+        )
+        LaunchedEffect(pagerState) {
+            // Subscribe to page changes
+            snapshotFlow { pagerState.currentPage }.collect { page ->
+                selectedPictureIndex = page
             }
         }
-    }
-    Column(modifier = Modifier.background(MaterialTheme.colors.background)) {
-        Box {
-            Box(
-                Modifier.fillMaxWidth().height(393.dp)
-                    .background(Color.Black),
-                contentAlignment = Alignment.Center
-            ) {
+
+        fun nextImage() {
+            viewScope.launch {
+                pagerState.animateScrollToPage(
+                    (pagerState.currentPage + 1).mod(pictures.size)
+                )
+            }
+        }
+
+        fun previousImage() {
+            viewScope.launch {
+                pagerState.animateScrollToPage(
+                    (pagerState.currentPage - 1).mod(pictures.size)
+                )
+            }
+        }
+
+        fun selectPicture(index: Int) {
+            viewScope.launch {
+                pagerState.animateScrollToPage(
+                    index,
+                    animationSpec = tween(
+                        easing = LinearOutSlowInEasing,
+                        durationMillis = AnimationConstants.DefaultDurationMillis * 2
+                    )
+                )
+            }
+        }
+
+        var galleryStyle by remember { mutableStateOf(GalleryStyle.SQUARES) }
+        val externalEvents = LocalInternalEvents.current
+        LaunchedEffect(Unit) {
+            externalEvents.collect {
+                when (it) {
+                    ExternalImageViewerEvent.Next -> nextImage()
+                    ExternalImageViewerEvent.Previous -> previousImage()
+                }
+            }
+        }
+        Column(modifier = Modifier.background(MaterialTheme.colors.background)) {
+            Box {
                 Box(
-                    Modifier.fillMaxSize()
-                        .clickable {
-                            router.push(MemoryPage(pagerState.currentPage))
-                        }
+                    Modifier.fillMaxWidth().height(393.dp)
+                        .background(Color.Black),
+                    contentAlignment = Alignment.Center
                 ) {
-                    HorizontalPager(state = pagerState) { index ->
-                        val picture = pictures[index]
-                        var image: ImageBitmap? by remember(picture) { mutableStateOf(null) }
-                        LaunchedEffect(picture) {
-                            image = imageProvider.getImage(picture)
-                        }
-                        if (image != null) {
-                            Box(Modifier.fillMaxSize().animatePageChanges(pagerState, index)) {
-                                Image(
-                                    bitmap = image!!,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                                MemoryTextOverlay(picture)
+                    Box(
+                        Modifier.fillMaxSize()
+                            .clickable {
+                                router.push(MemoryPage(pagerState.currentPage))
+                            }
+                    ) {
+                        HorizontalPager(state = pagerState) { index ->
+                            val picture = pictures[index]
+                            var image: ImageBitmap? by remember(picture) { mutableStateOf(null) }
+                            LaunchedEffect(picture) {
+                                image = imageProvider.getImage(picture)
+                            }
+                            if (image != null) {
+                                Box(Modifier.fillMaxSize().animatePageChanges(pagerState, index)) {
+                                    Image(
+                                        bitmap = image!!,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    MemoryTextOverlay(picture)
+                                }
                             }
                         }
                     }
                 }
-            }
-            TopLayout(
-                alignLeftContent = {},
-                alignRightContent = {
-                    CircularButton(
-                        imageVector = IconMenu,
-                        modifier = Modifier.testTag("toggleGalleryStyleButton")
-                    ) {
-                        galleryStyle = when (galleryStyle) {
-                            GalleryStyle.SQUARES -> GalleryStyle.LIST
-                            GalleryStyle.LIST -> GalleryStyle.SQUARES
+                TopLayout(
+                    alignLeftContent = {},
+                    alignRightContent = {
+                        CircularButton(
+                            imageVector = IconMenu,
+                            modifier = Modifier.testTag("toggleGalleryStyleButton")
+                        ) {
+                            galleryStyle = when (galleryStyle) {
+                                GalleryStyle.SQUARES -> GalleryStyle.LIST
+                                GalleryStyle.LIST -> GalleryStyle.SQUARES
+                            }
                         }
-                    }
-                },
-            )
-        }
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-            when (galleryStyle) {
-                GalleryStyle.SQUARES -> SquaresGalleryView(
-                    images = pictures,
-                    pagerState = pagerState,
-                    onSelect = { selectPicture(it) },
-                )
-                GalleryStyle.LIST -> ListGalleryView(
-                    pictures = pictures,
-                    onSelect = { selectPicture(it) },
-                    onFullScreen = {
-                        router.push(MemoryPage(it))
                     },
                 )
             }
-            CircularButton(
-                Icons.Filled.Add,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(36.dp),
-                onClick = {
-                    router.push(CameraPage())
-                },
-            )
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                when (galleryStyle) {
+                    GalleryStyle.SQUARES -> SquaresGalleryView(
+                        images = pictures,
+                        pagerState = pagerState,
+                        onSelect = { selectPicture(it) },
+                    )
+
+                    GalleryStyle.LIST -> ListGalleryView(
+                        pictures = pictures,
+                        onSelect = { selectPicture(it) },
+                        onFullScreen = {
+                            router.push(MemoryPage(it))
+                        },
+                    )
+                }
+                CircularButton(
+                    Icons.Filled.Add,
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(36.dp),
+                    onClick = {
+                        router.push(CameraPage())
+                    },
+                )
+            }
         }
     }
 }

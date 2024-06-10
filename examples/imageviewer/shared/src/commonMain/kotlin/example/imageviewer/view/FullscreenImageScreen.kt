@@ -12,93 +12,98 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
-import dev.programadorthi.routing.compose.LocalRouting
-import dev.programadorthi.routing.compose.pop
+import cafe.adriel.voyager.core.screen.Screen
+import dev.programadorthi.routing.voyager.LocalVoyagerRouting
+import dev.programadorthi.routing.voyager.pop
 import example.imageviewer.LocalImageProvider
 import example.imageviewer.LocalImagesProvider
-import example.imageviewer.Localization
 import example.imageviewer.LocalLocalization
+import example.imageviewer.Localization
 import example.imageviewer.filter.FilterType
 import example.imageviewer.filter.getFilter
 import example.imageviewer.filter.getPlatformContext
 import example.imageviewer.model.*
-import example.imageviewer.routing.FullScreenPage
 import example.imageviewer.style.*
 
-@Composable
-fun FullscreenImageScreen(
-    fullScreenPage: FullScreenPage,
-) {
-    val pictures = LocalImagesProvider.current
-    val imageProvider = LocalImageProvider.current
-    val localization: Localization = LocalLocalization.current
-    val router = LocalRouting.current
-    val availableFilters = FilterType.entries.toList()
-    val picture = remember(fullScreenPage) { pictures[fullScreenPage.pictureIndex] }
-    var selectedFilters by remember { mutableStateOf(emptySet<FilterType>()) }
+class FullscreenImageScreen(
+    private val pictureIndex: Int
+) : Screen {
 
-    val originalImageState = remember(picture) { mutableStateOf<ImageBitmap?>(null) }
-    LaunchedEffect(picture) {
-        originalImageState.value = imageProvider.getImage(picture)
-    }
+    @Composable
+    override fun Content() {
+        val pictures = LocalImagesProvider.current
+        val imageProvider = LocalImageProvider.current
+        val localization: Localization = LocalLocalization.current
+        val router = LocalVoyagerRouting.current
+        val availableFilters = FilterType.entries.toList()
+        val picture = remember { pictures[pictureIndex] }
+        var selectedFilters by remember { mutableStateOf(emptySet<FilterType>()) }
 
-    val platformContext = getPlatformContext()
-    val originalImage = originalImageState.value
-    val imageWithFilter = remember(originalImage, selectedFilters) {
-        if (originalImage != null) {
-            var result: ImageBitmap = originalImage
-            for (filter in selectedFilters.map { getFilter(it) }) {
-                result = filter.invoke(result, platformContext)
-            }
-            result
-        } else {
-            null
-        }
-    }
-    Box(Modifier.fillMaxSize().background(color = ImageviewerColors.fullScreenImageBackground)) {
-        if (imageWithFilter != null) {
-            val scalableState = remember { ScalableState() }
-
-            ScalableImage(
-                scalableState,
-                imageWithFilter,
-                modifier = Modifier.fillMaxSize().clipToBounds(),
-            )
-
-            Column(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                    .background(ImageviewerColors.filterButtonsBackground)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                FilterButtons(
-                    picture = picture,
-                    filters = availableFilters,
-                    selectedFilters = selectedFilters,
-                    onSelectFilter = {
-                        if (it !in selectedFilters) {
-                            selectedFilters += it
-                        } else {
-                            selectedFilters -= it
-                        }
-                    },
-                )
-                ZoomControllerView(Modifier, scalableState)
-            }
+        val originalImageState = remember(picture) { mutableStateOf<ImageBitmap?>(null) }
+        LaunchedEffect(picture) {
+            originalImageState.value = imageProvider.getImage(picture)
         }
 
-        TopLayout(
-            alignLeftContent = {
-                Tooltip(localization.back) {
-                    BackButton {
-                        router.pop()
-                    }
+        val platformContext = getPlatformContext()
+        val originalImage = originalImageState.value
+        val imageWithFilter = remember(originalImage, selectedFilters) {
+            if (originalImage != null) {
+                var result: ImageBitmap = originalImage
+                for (filter in selectedFilters.map { getFilter(it) }) {
+                    result = filter.invoke(result, platformContext)
                 }
-            },
-            alignRightContent = {},
-        )
+                result
+            } else {
+                null
+            }
+        }
+        Box(
+            Modifier.fillMaxSize().background(color = ImageviewerColors.fullScreenImageBackground)
+        ) {
+            if (imageWithFilter != null) {
+                val scalableState = remember { ScalableState() }
+
+                ScalableImage(
+                    scalableState,
+                    imageWithFilter,
+                    modifier = Modifier.fillMaxSize().clipToBounds(),
+                )
+
+                Column(
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                        .background(ImageviewerColors.filterButtonsBackground)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    FilterButtons(
+                        picture = picture,
+                        filters = availableFilters,
+                        selectedFilters = selectedFilters,
+                        onSelectFilter = {
+                            if (it !in selectedFilters) {
+                                selectedFilters += it
+                            } else {
+                                selectedFilters -= it
+                            }
+                        },
+                    )
+                    ZoomControllerView(Modifier, scalableState)
+                }
+            }
+
+            TopLayout(
+                alignLeftContent = {
+                    Tooltip(localization.back) {
+                        BackButton {
+                            router.pop()
+                        }
+                    }
+                },
+                alignRightContent = {},
+            )
+        }
     }
 }
 

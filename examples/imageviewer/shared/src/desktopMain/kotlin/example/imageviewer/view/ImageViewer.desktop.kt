@@ -19,8 +19,8 @@ import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
-import dev.programadorthi.routing.compose.canPop
-import dev.programadorthi.routing.compose.pop
+import dev.programadorthi.routing.voyager.canPop
+import dev.programadorthi.routing.voyager.pop
 import example.imageviewer.Dependencies
 import example.imageviewer.DesktopImageStorage
 import example.imageviewer.ExternalImageViewerEvent

@@ -1,13 +1,10 @@
 package example.imageviewer.routing
 
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import dev.programadorthi.routing.compose.animation.composable
 import dev.programadorthi.routing.core.install
 import dev.programadorthi.routing.core.routing
 import dev.programadorthi.routing.resources.Resources
 import dev.programadorthi.routing.statuspages.StatusPages
+import dev.programadorthi.routing.voyager.screen
 import example.imageviewer.view.CameraScreen
 import example.imageviewer.view.FullscreenImageScreen
 import example.imageviewer.view.GalleryScreen
@@ -25,57 +22,19 @@ val router = routing {
         }
     }
 
-    composable<CameraPage> {
+    screen<CameraPage> {
         CameraScreen()
     }
 
-    composable<FullScreenPage> { page ->
-        FullscreenImageScreen(fullScreenPage = page)
+    screen<FullScreenPage> { page ->
+        FullscreenImageScreen(pictureIndex = page.pictureIndex)
     }
 
-    composable<GalleryPage>(
-        enterTransition = {
-            // Check if we are routing from MemoryPage to GalleryPage
-            val enterFadeIn = initialState.uri.startsWith("/memory")
-            if (enterFadeIn) {
-                fadeIn()
-            } else {
-                defaultEnterTransition()
-            }
-        },
-        exitTransition = {
-            // Check if we are routing from GalleryPage to MemoryPage
-            val exitFadeOut = targetState.uri.startsWith("/memory")
-            if (exitFadeOut) {
-                fadeOut(tween(durationMillis = 500, 500))
-            } else {
-                defaultExitTransition()
-            }
-        }
-    ) { page ->
-        GalleryScreen(galleryPage = page)
+    screen<GalleryPage> { page ->
+        GalleryScreen(initialPictureIndex = page.pictureIndex)
     }
 
-    composable<MemoryPage>(
-        enterTransition = {
-            // Check if we are routing from MemoryPage to GalleryPage
-            val enterFadeIn = initialState.uri.startsWith("/gallery")
-            if (enterFadeIn) {
-                fadeIn()
-            } else {
-                defaultEnterTransition()
-            }
-        },
-        exitTransition = {
-            // Check if we are routing from GalleryPage to MemoryPage
-            val exitFadeOut = targetState.uri.startsWith("/gallery")
-            if (exitFadeOut) {
-                fadeOut(tween(delayMillis = 150))
-            } else {
-                defaultExitTransition()
-            }
-        }
-    ) { page ->
-        MemoryScreen(memoryPage = page)
+    screen<MemoryPage> { page ->
+        MemoryScreen(pictureIndex = page.pictureIndex)
     }
 }
