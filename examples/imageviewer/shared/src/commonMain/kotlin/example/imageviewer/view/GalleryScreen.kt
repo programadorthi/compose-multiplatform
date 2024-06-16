@@ -68,7 +68,9 @@ fun GalleryScreen(
     val router = LocalRouting.current
     val viewScope = rememberCoroutineScope()
 
-    var selectedPictureIndex by rememberSaveable(key = "${galleryPage::class}") {
+    var selectedPictureIndex by rememberSaveable(
+        key = "gallery-screen-index",
+    ) {
         val result = router.poppedCall()?.popResult<PopResult>()
         mutableStateOf(result?.index ?: galleryPage.pictureIndex)
     }
@@ -120,7 +122,6 @@ fun GalleryScreen(
             when (it) {
                 ExternalImageViewerEvent.Next -> nextImage()
                 ExternalImageViewerEvent.Previous -> previousImage()
-                else -> {}
             }
         }
     }
@@ -179,6 +180,7 @@ fun GalleryScreen(
                     pagerState = pagerState,
                     onSelect = { selectPicture(it) },
                 )
+
                 GalleryStyle.LIST -> ListGalleryView(
                     pictures = pictures,
                     onSelect = { selectPicture(it) },

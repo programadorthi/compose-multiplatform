@@ -16,7 +16,7 @@ kotlin {
         browser()
         useEsModules()
     }
-    wasmJs { browser() }
+    //wasmJs { browser() }
 
     listOf(
         iosX64(),
@@ -47,8 +47,8 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
 
-            implementation("dev.programadorthi.routing:compose-animation:0.0.15")
-            implementation("dev.programadorthi.routing:status-pages:0.0.15")
+            implementation("dev.programadorthi.routing:compose-animation:0.0.17")
+            implementation("dev.programadorthi.routing:status-pages:0.0.17")
         }
 
         androidMain.dependencies {
@@ -75,9 +75,9 @@ kotlin {
             dependsOn(jsWasmMain)
         }
 
-        val wasmJsMain by getting {
+        /*val wasmJsMain by getting {
             dependsOn(jsWasmMain)
-        }
+        }*/
 
         val desktopMain by getting
         desktopMain.dependencies {
