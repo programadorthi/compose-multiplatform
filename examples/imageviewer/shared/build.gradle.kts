@@ -47,8 +47,8 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
 
-            implementation("dev.programadorthi.routing:voyager:0.0.16")
-            implementation("dev.programadorthi.routing:status-pages:0.0.16")
+            implementation("dev.programadorthi.routing:voyager:0.0.17")
+            implementation("dev.programadorthi.routing:status-pages:0.0.17")
         }
 
         androidMain.dependencies {

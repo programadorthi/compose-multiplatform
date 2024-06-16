@@ -12,7 +12,7 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(project(":shared"))
-                implementation("dev.programadorthi.routing:voyager:0.0.16")
+                implementation("dev.programadorthi.routing:voyager:0.0.17")
             }
         }
     }
